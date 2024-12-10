@@ -7,6 +7,7 @@ Si les arguments sont incorrects, un message d’erreur est affiché et le progr
 
 ## 2. Appel à getaddrinfo pour obtenir l’adresse du serveur 
 
-![image](https://prod-files-secure.s3.us-west-2.amazonaws.com/7b6f2315-855b-4fcd-b273-2df71e786c33/28a626a4-5925-4abd-8754-737c2e5cd19b/image.png)
+![image](https://github.com/user-attachments/assets/d697e92d-70b1-4bd0-b0de-2910c6193aa5)
 
-![image](https://prod-files-secure.s3.us-west-2.amazonaws.com/7b6f2315-855b-4fcd-b273-2df71e786c33/805878d9-13de-4c43-8271-ecb233a5f0d0/image.png)
+![image](https://github.com/user-attachments/assets/f625e399-8087-494a-82e7-14ddd7774356)
+

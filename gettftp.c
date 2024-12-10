@@ -2,6 +2,9 @@
 #include <string.h>
 #include <netdb.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 
 int main(int argc, char *argv[]) {
     ////////////////////////////////////////////////// get the host name, the file from the user and the port number
@@ -39,8 +42,26 @@ int main(int argc, char *argv[]) {
         printf("Family = %d, Type = %d, Protocol = %d\n",
                r->ai_family, r->ai_socktype, r->ai_protocol);
     }
+        //////////////////////////////////////// create socket
     
-    // Free the memory
+    int sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    if (sockfd == -1) {
+        perror("socket creation failed");
+        freeaddrinfo(res);
+        exit(EXIT_FAILURE);
+    }
+    
+    ///////////////////////////////////////////////////// send data to the server
+    
+    
+    ///////////////////////////////////////////////////// receive response from the server
+    
+    
+    
+    
+    ////////////////////////////////////////////////////// close socket
+    close(sockfd);
+    ///////////////////////////////////////////////////// Free the memory
     freeaddrinfo(res);
     exit(EXIT_SUCCESS);
 

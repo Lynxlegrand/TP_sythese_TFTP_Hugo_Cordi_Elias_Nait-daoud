@@ -17,4 +17,17 @@ On filtre pour avoir uniquement UDP : protocol = 17
 
 ![image](https://github.com/user-attachments/assets/f625e399-8087-494a-82e7-14ddd7774356)
 
+On voit bien que le PC et le serveur DNS communiquent.
+
+## 3. Réservation d’un socket de connexion vers le serveur 
+
+![image](https://github.com/user-attachments/assets/4259aacc-e458-4346-a628-c5d0fa41fcd7)
+
+Pour des raisons pratiques, on simule un serveur local à partir de la console. 
+
+![image](https://github.com/user-attachments/assets/1f98908d-7554-4e6a-9f48-d9597fe52ffa)
+
+Puis à partir d'une autre console on envoie un ping pour savoir si le serveur nous répond. 
+
+
 

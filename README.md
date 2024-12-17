@@ -31,4 +31,4 @@ On le ping depuis une autre console pour voir si il répond. Malheureusement, pu
 
 ![image](https://github.com/user-attachments/assets/e7b62118-35a4-45b9-973b-8e59b3426203)
 
-
+Lorsque l'on ping sur un autre serveur, il ne répond pas on décide donc d'utiliser atftp qui est un serveur local et on voit bien qu'il est actif. Maintenant il faut voir s'il répond à une requête.

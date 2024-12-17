@@ -31,4 +31,14 @@ On le ping depuis une autre console pour voir si il répond. Malheureusement, pu
 
 ![image](https://github.com/user-attachments/assets/6ccc6d14-806e-46f0-a11c-3a88254b3573)
 
+
+
+
+![image](https://github.com/user-attachments/assets/e258444f-f0e6-4986-b066-6c52cdb35270)
+
+
+
+
+
+
 On créé la requête RRQ, puis on l'envoie au serveur et on voit sur Wireshark que la requête RRQ à bien été réalisée.

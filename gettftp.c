@@ -79,55 +79,61 @@ int main(int argc, char *argv[]) {
     }
     printf("RRQ sent for file: %s\n", file);
 
-    ///////////////////////////////////////////////////// receive a single DATA packet from the server
+    ///////////////////////////////////////////////////// receive DATA packets from the server
     unsigned char buffer[TFTP_BLOCK_SIZE + 4];  // Buffer for receiving DATA
     socklen_t addr_len = sizeof(server_addr);
     int block_num = 1;
 
-    int received_size = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr *)&server_addr, &addr_len);
-    if (received_size == -1) {
-        perror("recvfrom failed");
-        close(sockfd);
-        freeaddrinfo(res);
-        exit(EXIT_FAILURE);
-    }
+    while (1) {
+        int received_size = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr *)&server_addr, &addr_len);
+        if (received_size == -1) {
+            perror("recvfrom failed");
+            close(sockfd);
+            freeaddrinfo(res);
+            exit(EXIT_FAILURE);
+        }
 
-    if (buffer[1] == TFTP_OPCODE_DATA && ntohs(*(unsigned short *) &buffer[2]) == block_num) {
-        printf("Received block %d with %d bytes of data.\n", block_num, received_size - 4);
+        if (buffer[1] == TFTP_OPCODE_DATA && ntohs(*(unsigned short *) &buffer[2]) == block_num) {
+            printf("Received block %d with %d bytes of data.\n", block_num, received_size - 4);
 
-        // Check if the file is larger than 512 bytes
-        if (received_size > TFTP_BLOCK_SIZE + 4) {
-            printf("Error: File is too large, received size exceeds 512 bytes\n");
-            close(sockfd);
-            freeaddrinfo(res);
-            exit(EXIT_FAILURE);
+            // Check if the file is larger than 512 bytes
+            if (received_size > TFTP_BLOCK_SIZE + 4) {
+                printf("Error: File is too large, received size exceeds 512 bytes\n");
+                break;
+            }
+            
+            // Save the data received
+            FILE *file_out = fopen("received_file", "ab");
+            if (file_out == NULL) {
+                perror("Error opening file to write");
+                close(sockfd);
+                freeaddrinfo(res);
+                exit(EXIT_FAILURE);
+            }
+            fwrite(&buffer[4], 1, received_size - 4, file_out);
+            fclose(file_out);
+            
+            if (received_size < TFTP_BLOCK_SIZE + 4) {
+                break;  // End of file
+            }
+
+            ///////////////////////////////////////////////////// send ACK
+            unsigned char ack[4];
+            ack[0] = 0;
+            ack[1] = TFTP_OPCODE_ACK;  // Opcode for ACK
+            *(unsigned short *) &ack[2] = htons(block_num);
+            if (sendto(sockfd, ack, sizeof(ack), 0, (struct sockaddr *)&server_addr, addr_len) == -1) {
+                perror("sendto ACK failed");
+                close(sockfd);
+                freeaddrinfo(res);
+                exit(EXIT_FAILURE);
+            }
+            printf("ACK sent for block %d\n", block_num);
+            block_num++;
+        } else if (buffer[1] == 5) {  // ERROR (Opcode 5)
+            printf("Error received from server: %s\n", &buffer[4]);
+            break;
         }
-        
-        // Save the data received
-        FILE *file_out = fopen("received_file", "ab");
-        if (file_out == NULL) {
-            perror("Error opening file to write");
-            close(sockfd);
-            freeaddrinfo(res);
-            exit(EXIT_FAILURE);
-        }
-        fwrite(&buffer[4], 1, received_size - 4, file_out);
-        fclose(file_out);
-        
-        ///////////////////////////////////////////////////// send ACK
-        unsigned char ack[4];
-        ack[0] = 0;
-        ack[1] = TFTP_OPCODE_ACK;  // Opcode for ACK
-        *(unsigned short *) &ack[2] = htons(block_num);
-        if (sendto(sockfd, ack, sizeof(ack), 0, (struct sockaddr *)&server_addr, addr_len) == -1) {
-            perror("sendto ACK failed");
-            close(sockfd);
-            freeaddrinfo(res);
-            exit(EXIT_FAILURE);
-        }
-        printf("ACK sent for block %d\n", block_num);
-    } else if (buffer[1] == 5) {  // ERROR (Opcode 5)
-        printf("Error received from server: %s\n", &buffer[4]);
     }
 
     ////////////////////////////////////////////////////// close socket

@@ -29,6 +29,6 @@ Maintenant qu'on a l'adresse du serveur, on peut créer un socket. Cependant, en
 
 On le ping depuis une autre console pour voir si il répond. Malheureusement, puisqu'il est interne, on ne peut pas voir les communications client-serveur avec wireshark car ce logiciel permet de visualiser les communications sortantes et entrantes. 
 
-![image.png](https://prod-files-secure.s3.us-west-2.amazonaws.com/7b6f2315-855b-4fcd-b273-2df71e786c33/14a80007-79a8-4e4b-b5ec-3c274d619ce4/image.png)
+![image](https://github.com/user-attachments/assets/6ccc6d14-806e-46f0-a11c-3a88254b3573)
 
 On créé la requête RRQ, puis on l'envoie au serveur et on voit sur Wireshark que la requête RRQ à bien été réalisée.

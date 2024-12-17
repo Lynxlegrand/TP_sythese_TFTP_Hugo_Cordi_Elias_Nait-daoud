@@ -7,23 +7,24 @@
 #include <arpa/inet.h>
 
 #define TFTP_PORT 1069
-#define TFTP_OPCODE_RRQ 1   // Opcode for Read Request (RRQ)
+#define TFTP_OPCODE_RRQ 1
+#define TFTP_OPCODE_DATA 3
+#define TFTP_OPCODE_ACK 4
+#define TFTP_BLOCK_SIZE 512
 
 int main(int argc, char *argv[]) {
-    // a) Construct a properly formed RRQ (Read Request) and send it to the server.
-    // Check if the correct number of arguments are passed
+    ////////////////////////////////////////////////// get the host name, the file from the user and the port number
     if (argc != 4) {
-        printf("Usage: %s <host> <file> <port>\n", argv[0]);
+        printf("Error\n");
         return 1;
     }
+    char *host = argv[1];    // get host and file given by the user
+    char *file = argv[2];
+    char *port = argv[3];
+    printf("Host: %s, File: %s, Port %s\n", host, file, port);
     
-    char *host = argv[1];  // Get the server's address (host)
-    char *file = argv[2];  // Get the file name to download
-    char *port = argv[3];  // Get the port (not used here, as the port is fixed)
-
-    printf("Host: %s, File: %s, Port: %s\n", host, file, port);
+    ///////////////////////////////////////////////// get the IP address of the host
     
-    ///////////////////////////////////////////////// Get the IP address of the server
     struct addrinfo hints;     
     struct addrinfo *res, *r;  
     int e;
@@ -31,9 +32,9 @@ int main(int argc, char *argv[]) {
     memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_family = AF_INET;        // IPv4
     hints.ai_socktype = SOCK_DGRAM;   // Use UDP sockets
-    hints.ai_protocol = IPPROTO_UDP;  // UDP protocol (optional)
+    hints.ai_protocol = IPPROTO_UDP;  // Protocol UDP (optional)
     
-    // Get the server address from the hostname
+    // Use of getaddrinfo
     e = getaddrinfo(argv[1], NULL, &hints, &res);
     
     if (e != 0) {
@@ -41,46 +42,99 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
     
-    // Print the results from the address lookup
-    printf("Results for the host: %s\n", argv[1]);
+    // Show the results
+    printf("Results for the host name : %s\n", argv[1]);
     for (r = res; r != NULL; r = r->ai_next) {
         printf("Family = %d, Type = %d, Protocol = %d\n",
                r->ai_family, r->ai_socktype, r->ai_protocol);
     }
 
-    //////////////////////////////////////// Create the UDP socket
+    //////////////////////////////////////// create socket
     int sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if (sockfd == -1) {
-        perror("Socket creation failed");
+        perror("socket creation failed");
         freeaddrinfo(res);
         exit(EXIT_FAILURE);
     }
 
-    ///////////////////////////////////////////////////// a) Construct the RRQ and send it
-    unsigned char rrq[4 + strlen(file) + 1 + 2 + 1];
-    rrq[0] = 0;                     // Byte 0: 0 (high byte of the Opcode)
-    rrq[1] = TFTP_OPCODE_RRQ;       // Byte 1: 1 (Opcode for RRQ)
-    strcpy((char *) &rrq[2], file); // Bytes 2 and onward: file name
-    rrq[2 + strlen(file)] = 0;      // Byte following the filename: Null-terminator
-    strcpy((char *) &rrq[3 + strlen(file)], "octet");  // Mode "octet" for binary transfer
-    rrq[3 + strlen(file) + 5] = 0;  // Null-terminator for the end of the mode string
+    ///////////////////////////////////////////////////// send RRQ to the server (Read Request)
+    // RRQ message construction
+    unsigned char rrq[2 + strlen(file) + 1 + strlen("octet") + 1];  // Adjust size for both file and mode
+    rrq[0] = 0;
+    rrq[1] = TFTP_OPCODE_RRQ;  // Opcode for RRQ
+    strcpy((char *) &rrq[2], file);  // Copy file name
+    rrq[2 + strlen(file)] = 0;  // Null-terminate the file name
+    strcpy((char *) &rrq[3 + strlen(file)], "octet");  // Copy mode
+    rrq[3 + strlen(file) + strlen("octet")] = 0;  // Null-terminate the mode
 
-    // Copy the server address for sending the packet
     struct sockaddr_in server_addr;
     memcpy(&server_addr, res->ai_addr, res->ai_addrlen);
-    server_addr.sin_port = htons(TFTP_PORT);  // Set the port for TFTP
+    server_addr.sin_port = htons(TFTP_PORT);
 
-    // Send the RRQ to the server
     if (sendto(sockfd, rrq, sizeof(rrq), 0, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
-        perror("Failed to send RRQ");
+        perror("sendto failed");
         close(sockfd);
         freeaddrinfo(res);
         exit(EXIT_FAILURE);
     }
-    printf("RRQ sent for the file: %s\n", file);
+    printf("RRQ sent for file: %s\n", file);
 
-    //////////////////////////////////////////////////////// Close the socket and clean up
-    close(sockfd);           // Close the socket after sending
-    freeaddrinfo(res);       // Free the memory allocated for the address info
-    return 0;                // End the program successfully
+    ///////////////////////////////////////////////////// receive a single DATA packet from the server
+    unsigned char buffer[TFTP_BLOCK_SIZE + 4];  // Buffer for receiving DATA
+    socklen_t addr_len = sizeof(server_addr);
+    int block_num = 1;
+
+    int received_size = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr *)&server_addr, &addr_len);
+    if (received_size == -1) {
+        perror("recvfrom failed");
+        close(sockfd);
+        freeaddrinfo(res);
+        exit(EXIT_FAILURE);
+    }
+
+    if (buffer[1] == TFTP_OPCODE_DATA && ntohs(*(unsigned short *) &buffer[2]) == block_num) {
+        printf("Received block %d with %d bytes of data.\n", block_num, received_size - 4);
+
+        // Check if the file is larger than 512 bytes
+        if (received_size > TFTP_BLOCK_SIZE + 4) {
+            printf("Error: File is too large, received size exceeds 512 bytes\n");
+            close(sockfd);
+            freeaddrinfo(res);
+            exit(EXIT_FAILURE);
+        }
+        
+        // Save the data received
+        FILE *file_out = fopen("received_file", "ab");
+        if (file_out == NULL) {
+            perror("Error opening file to write");
+            close(sockfd);
+            freeaddrinfo(res);
+            exit(EXIT_FAILURE);
+        }
+        fwrite(&buffer[4], 1, received_size - 4, file_out);
+        fclose(file_out);
+        
+        ///////////////////////////////////////////////////// send ACK
+        unsigned char ack[4];
+        ack[0] = 0;
+        ack[1] = TFTP_OPCODE_ACK;  // Opcode for ACK
+        *(unsigned short *) &ack[2] = htons(block_num);
+        if (sendto(sockfd, ack, sizeof(ack), 0, (struct sockaddr *)&server_addr, addr_len) == -1) {
+            perror("sendto ACK failed");
+            close(sockfd);
+            freeaddrinfo(res);
+            exit(EXIT_FAILURE);
+        }
+        printf("ACK sent for block %d\n", block_num);
+    } else if (buffer[1] == 5) {  // ERROR (Opcode 5)
+        printf("Error received from server: %s\n", &buffer[4]);
+    }
+
+    ////////////////////////////////////////////////////// close socket
+    close(sockfd);
+    ///////////////////////////////////////////////////// Free the memory
+    freeaddrinfo(res);
+    exit(EXIT_SUCCESS);
+
+    return 0; 
 }

@@ -29,5 +29,6 @@ Maintenant qu'on a l'adresse du serveur, on peut créer un socket. Cependant, en
 
 On le ping depuis une autre console pour voir si il répond. Malheureusement, puisqu'il est interne, on ne peut pas voir les communications client-serveur avec wireshark car ce logiciel permet de visualiser les communications sortantes et entrantes. 
 
+![image](https://github.com/user-attachments/assets/e7b62118-35a4-45b9-973b-8e59b3426203)
 
 

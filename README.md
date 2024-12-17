@@ -38,6 +38,7 @@ On le ping depuis une autre console pour voir si il répond. Malheureusement, pu
 
 
 
+![image](https://github.com/user-attachments/assets/bfc0ac8f-82fb-4b09-9c85-a7dc0bc70098)
 
 
 
